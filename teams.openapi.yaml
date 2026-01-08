@@ -1,0 +1,241 @@
+openapi: 3.0.1
+info:
+  title: Default module
+  description: Manages the lifecycle of database instances.
+  version: 1.0.0
+tags: []
+paths:
+  /teams:
+    get:
+      summary: List teams for the current user
+      deprecated: false
+      description: ''
+      tags: []
+      parameters: []
+      responses:
+        '200':
+          description: Teams list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Team'
+          headers: {}
+      security:
+        - oidcAuth: []
+    post:
+      summary: Create a new team
+      deprecated: false
+      description: ''
+      tags: []
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTeamRequest'
+        required: true
+      responses:
+        '201':
+          description: Team created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+          headers: {}
+      security:
+        - oidcAuth: []
+  /teams/{id}:
+    get:
+      summary: Get team details and quotas
+      deprecated: false
+      description: ''
+      tags: []
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Team details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+          headers: {}
+      security:
+        - oidcAuth: []
+  /teams/{id}/members:
+    get:
+      summary: List members of a team
+      deprecated: false
+      description: ''
+      tags: []
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Member list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamMember'
+          headers: {}
+      security:
+        - oidcAuth: []
+    post:
+      summary: Add a member to the team
+      deprecated: false
+      description: ''
+      tags: []
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddMemberRequest'
+        required: true
+      responses:
+        '201':
+          description: Member added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamMember'
+          headers: {}
+      security:
+        - oidcAuth: []
+  /teams/{id}/members/{user_id}:
+    delete:
+      summary: Remove a member
+      deprecated: false
+      description: ''
+      tags: []
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: string
+            format: uuid
+        - name: user_id
+          in: path
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Member removed
+          headers: {}
+      security:
+        - oidcAuth: []
+components:
+  schemas:
+    Team:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        quota:
+          $ref: '#/components/schemas/TeamQuota'
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - quota
+    TeamQuota:
+      type: object
+      readOnly: true
+      properties:
+        limit_instances:
+          type: integer
+        limit_cpu_millicores:
+          type: integer
+        limit_ram_mb:
+          type: integer
+        limit_storage_gb:
+          type: integer
+    TeamMember:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        role:
+          type: string
+          enum:
+            - owner
+            - member
+        joined_at:
+          type: string
+          format: date-time
+      required:
+        - user_id
+        - email
+        - role
+    CreateTeamRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 3
+      required:
+        - name
+    AddMemberRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          description: The user must already exist in the system (logged in once via OIDC)
+        role:
+          type: string
+          enum:
+            - owner
+            - member
+          default: member
+      required:
+        - email
+  responses: {}
+  securitySchemes:
+    oidcAuth:
+      type: openIdConnect
+      openIdConnectUrl: https://idp.domain.com/.well-known/openid-configuration
+      scheme: bearer
+      bearerFormat: JWT
+servers: []
+security: []

@@ -1,0 +1,277 @@
+openapi: 3.0.1
+info:
+  title: Default module
+  description: Manages the lifecycle of database instances.
+  version: 1.0.0
+tags: []
+paths:
+  /databases/{id}:
+    get:
+      summary: Get database details
+      deprecated: false
+      description: ''
+      tags: []
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Database details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseInstance'
+          headers:
+            ETag:
+              required: false
+              description: Opaque version identifier (integer cast to string)
+              schema:
+                type: string
+                example: '5'
+      security:
+        - oidcAuth: []
+    patch:
+      summary: Update database specification
+      deprecated: false
+      description: Requires valid ETag to prevent overwriting operator state.
+      tags: []
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: string
+            format: uuid
+        - name: If-Match
+          in: header
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDatabaseRequest'
+        required: true
+      responses:
+        '200':
+          description: Update accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseInstance'
+          headers: {}
+        '409':
+          description: Version conflict. Fetch latest data and retry.
+          headers: {}
+      security:
+        - oidcAuth: []
+    delete:
+      summary: Deprovision database
+      deprecated: false
+      description: ''
+      tags: []
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Database marked for deletion
+          headers: {}
+      security:
+        - oidcAuth: []
+  /databases:
+    get:
+      summary: List databases
+      deprecated: false
+      description: ''
+      tags: []
+      parameters:
+        - name: team_id
+          in: query
+          description: ''
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: List of databases
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DatabaseInstance'
+          headers: {}
+      security:
+        - oidcAuth: []
+    post:
+      summary: Provision a new database
+      deprecated: false
+      description: ''
+      tags: []
+      parameters: []
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDatabaseRequest'
+        required: true
+      responses:
+        '201':
+          description: Accepted and Pending
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseInstance'
+          headers: {}
+      security:
+        - oidcAuth: []
+  /databases/{id}/credentials:
+    get:
+      summary: Retrieve sensitive credentials
+      deprecated: false
+      description: ''
+      tags: []
+      parameters:
+        - name: id
+          in: path
+          description: ''
+          required: true
+          example: ''
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Credentials retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseCredentials'
+          headers: {}
+      security:
+        - oidcAuth: []
+components:
+  schemas:
+    DatabaseInstance:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: payment-service-prod
+        team_id:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - PENDING
+            - PROVISIONING
+            - READY
+            - FAILED
+            - DELETING
+        status_message:
+          type: string
+          description: Human-readable status from the operator
+        spec:
+          $ref: '#/components/schemas/DatabaseSpec'
+        connection_info:
+          $ref: '#/components/schemas/ConnectionInfo'
+        created_at:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - team_id
+        - status
+        - spec
+    DatabaseSpec:
+      type: object
+      properties:
+        cpu_millicores:
+          type: integer
+          minimum: 100
+        ram_mb:
+          type: integer
+          minimum: 256
+        storage_gb:
+          type: integer
+          minimum: 1
+        is_backup_enabled:
+          type: boolean
+      required:
+        - cpu_millicores
+        - ram_mb
+        - storage_gb
+    ConnectionInfo:
+      type: object
+      properties:
+        host:
+          type: string
+        port:
+          type: integer
+        username:
+          type: string
+      nullable: true
+    DatabaseCredentials:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          description: Plaintext password (decrypted by backend)
+    CreateDatabaseRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          pattern: ^[a-z0-9-]+$
+          maxLength: 63
+        team_id:
+          type: string
+          format: uuid
+        spec:
+          $ref: '#/components/schemas/DatabaseSpec'
+      required:
+        - name
+        - team_id
+        - spec
+    UpdateDatabaseRequest:
+      type: object
+      properties:
+        spec:
+          $ref: '#/components/schemas/DatabaseSpec'
+      required:
+        - spec
+  responses: {}
+  securitySchemes:
+    oidcAuth:
+      type: openIdConnect
+      openIdConnectUrl: https://idp.domain.com/.well-known/openid-configuration
+      scheme: bearer
+      bearerFormat: JWT
+servers: []
+security: []
