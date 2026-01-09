@@ -1,0 +1,82 @@
+openapi: 3.0.1
+info:
+  title: Health Check API
+  description: >-
+    Internal health check endpoints for Kubernetes liveness and readiness probes.
+    These endpoints are intended for internal use by Kubernetes only and should not
+    be exposed to external clients.
+  version: 1.0.0
+tags:
+  - name: Health
+paths:
+  /livez:
+    get:
+      summary: Liveness probe
+      description: >-
+        Internal endpoint for Kubernetes liveness probe. Indicates whether the
+        service is alive. This endpoint should return successfully as long as the
+        service process is running.
+      tags:
+        - Health
+      parameters: []
+      responses:
+        '200':
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '503':
+          description: Service is not alive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+      security: []
+  /readyz:
+    get:
+      summary: Readiness probe
+      description: >-
+        Internal endpoint for Kubernetes readiness probe. Indicates whether the
+        service is ready to accept traffic. This endpoint should return successfully
+        only when the service is fully initialized and ready to handle requests
+        (e.g., database connections established, dependencies available).
+      tags:
+        - Health
+      parameters: []
+      responses:
+        '200':
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+        '503':
+          description: Service is not ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatus'
+      security: []
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - ok
+            - error
+          description: Health status indicator
+        timestamp:
+          type: string
+          format: date-time
+          description: Timestamp of the health check
+        message:
+          type: string
+          description: Optional human-readable message about the health status
+      required:
+        - status
+        - timestamp
+servers: []
