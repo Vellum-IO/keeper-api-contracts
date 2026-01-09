@@ -6,6 +6,13 @@ This repository contains OpenAPI 3.0 specifications for the Keeper Database Serv
 
 - **openAPI/keeper.openapi.yaml:** Database, Database Credentials, Team and team member management API
 
+## Getting Started
+
+1. Copy the Makefile to your project
+2. Run `make download` (or `API_CONTRACTS_VERSION=1.0.2 make download` for a specific version)
+3. Commit and push: `git add openapi Makefile && git commit -m "Add Keeper API contracts" && git push`
+4. To update later: `make update` (i.e. `API_CONTRACTS_VERSION=1.0.3 make update`) then commit and push
+
 ## Usage
 
 Import this repository as a `Git Subtree` and tag a specific version:
@@ -13,7 +20,7 @@ Import this repository as a `Git Subtree` and tag a specific version:
 ```bash
 git subtree add \
   --prefix=openapi \
-  https://github.com/Vellum-IO/keeper-openapi-specs.git \
+  https://github.com/Vellum-IO/keeper-api-contracts.git \
   main \
   --squash
 ```
@@ -23,7 +30,7 @@ And when an update is needed just execute:
 ```bash
 git subtree pull \
   --prefix=openapi \
-  https://github.com/Vellum-IO/keeper-openapi-specs.git \
+  https://github.com/Vellum-IO/keeper-api-contracts.git \
   main \
   --squash
 ```
