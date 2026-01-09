@@ -188,15 +188,32 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: page
+          in: query
+          description: Page number (1-based)
+          required: false
+          example: 1
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of records per page
+          required: false
+          example: 20
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
       responses:
         '200':
           description: List of databases
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DatabaseInstance'
+                $ref: '#/components/schemas/DatabaseListResponse'
           headers: {}
         '400':
           $ref: '#/components/responses/BadRequest'
@@ -308,16 +325,33 @@ paths:
         of, including team details and quota information.
       tags:
         - Teams
-      parameters: []
+      parameters:
+        - name: page
+          in: query
+          description: Page number (1-based)
+          required: false
+          example: 1
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of records per page
+          required: false
+          example: 20
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
       responses:
         '200':
           description: Teams list
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Team'
+                $ref: '#/components/schemas/TeamListResponse'
           headers: {}
         '401':
           $ref: '#/components/responses/Unauthorized'
@@ -434,15 +468,32 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: page
+          in: query
+          description: Page number (1-based)
+          required: false
+          example: 1
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          description: Number of records per page
+          required: false
+          example: 20
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
       responses:
         '200':
           description: Member list
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TeamMember'
+                $ref: '#/components/schemas/TeamMemberListResponse'
           headers: {}
         '400':
           $ref: '#/components/responses/BadRequest'
@@ -775,6 +826,72 @@ components:
           default: member
       required:
         - email
+    PaginationMetadata:
+      type: object
+      properties:
+        total_records:
+          type: integer
+          description: Total number of records across all pages
+        current_page:
+          type: integer
+          description: Current page number (1-based)
+        total_pages:
+          type: integer
+          description: Total number of pages
+        limit:
+          type: integer
+          description: Number of records per page
+        next_page:
+          type: integer
+          nullable: true
+          description: Next page number, null if there is no next page
+        prev_page:
+          type: integer
+          nullable: true
+          description: Previous page number, null if there is no previous page
+      required:
+        - total_records
+        - current_page
+        - total_pages
+        - limit
+        - next_page
+        - prev_page
+    DatabaseListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DatabaseInstance'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+      required:
+        - data
+        - pagination
+    TeamListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Team'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+      required:
+        - data
+        - pagination
+    TeamMemberListResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamMember'
+        pagination:
+          $ref: '#/components/schemas/PaginationMetadata'
+      required:
+        - data
+        - pagination
   responses:
     BadRequest:
       description: Bad request - malformed request or validation error

@@ -47,11 +47,11 @@ At the moment no one is allowed to use this commercially.
 
 #### Pagination and Filtering
 
-- [ ] Add pagination parameters (`page`, `page_size` or `limit`/`offset`) to list endpoints
-  - `GET /databases`
-  - `GET /teams`
-  - `GET /teams/{id}/members`
-- [ ] Add pagination metadata to list responses (total count, next page, etc.)
+- [x] Add pagination parameters (`page`, `page_size` or `limit`/`offset`) to list endpoints
+  - [x] `GET /databases`
+  - [x] `GET /teams`
+  - [x] `GET /teams/{id}/members`
+- [x] Add pagination metadata to list responses (total count, next page, etc.)
 - [ ] Add filtering capabilities:
   - `GET /databases` - filter by `status` (PENDING, PROVISIONING, READY, FAILED, DELETING)
   - `GET /databases` - filter/search by `name`
