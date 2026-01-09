@@ -349,9 +349,9 @@ components:
             $ref: '#/components/schemas/Error'
   securitySchemes:
     oidcAuth:
-      type: openIdConnect
-      openIdConnectUrl: https://idp.domain.com/.well-known/openid-configuration
+      type: http
       scheme: bearer
       bearerFormat: JWT
+      description: OIDC JWT Bearer token authentication. Tokens are obtained from the OIDC provider at https://idp.domain.com
 servers: []
 security: []
