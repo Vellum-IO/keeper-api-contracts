@@ -4,8 +4,31 @@ This repository contains OpenAPI 3.0 specifications for the Keeper Database Serv
 
 ## API Specifications
 
-- **databases.openapi.yaml:** Database instance management API
-- **teams.openapi.yaml:** Team and team member management API
+- **openAPI/keeper.openapi.yaml:** Database, Database Credentials, Team and team member management API
+
+## Usage
+
+Import this repository as a `Git Subtree` and tag a specific version:
+
+```bash
+git subtree add \
+  --prefix=openapi \
+  https://github.com/Vellum-IO/keeper-openapi-specs.git \
+  main \
+  --squash
+```
+
+And when an update is needed just execute:
+
+```bash
+git subtree pull \
+  --prefix=openapi \
+  https://github.com/Vellum-IO/keeper-openapi-specs.git \
+  main \
+  --squash
+```
+
+You can also replace `main` with a specific `tag`(i.e. 1.0.2) to get the exact version you need.
 
 ## License
 
@@ -16,6 +39,7 @@ At the moment no one is allowed to use this commercially.
 ### High Priority
 
 #### Pagination and Filtering
+
 - [ ] Add pagination parameters (`page`, `page_size` or `limit`/`offset`) to list endpoints
   - `GET /databases`
   - `GET /teams`
@@ -28,6 +52,7 @@ At the moment no one is allowed to use this commercially.
 - [ ] Add sorting parameters (`sort_by`, `sort_order`) to list endpoints
 
 #### Admin Routes
+
 - [ ] `GET /admin/teams` - List all teams (admin only)
 - [ ] `GET /admin/databases` - List all databases across all teams (admin only)
 - [ ] `GET /admin/users` - List all users (admin only)
@@ -37,17 +62,20 @@ At the moment no one is allowed to use this commercially.
 #### Missing Endpoints and Operations
 
 **Teams:**
+
 - [ ] `PATCH /teams/{id}` - Update team name
 - [ ] `DELETE /teams/{id}` - Delete a team (with proper cascade handling)
 - [ ] `PATCH /teams/{id}/members/{user_id}` - Update team member role
 - [ ] `GET /teams/{id}/quota/usage` - Get current quota usage vs limits
 
 **Databases:**
+
 - [ ] `POST /databases/{id}/credentials/rotate` - Rotate database credentials
 - [ ] `POST /databases/{id}/cancel-deletion` - Cancel database deletion if in DELETING state
 - [ ] `GET /databases/{id}/events` or `GET /databases/{id}/logs` - Get database events/logs
 
 **System:**
+
 - [ ] `GET /health` - Health check endpoint
 - [ ] `GET /version` - API version information
 
