@@ -19,7 +19,7 @@ Import this repository as a `Git Subtree` and tag a specific version:
 
 ```bash
 git subtree add \
-  --prefix=openapi \
+  --prefix=keeper_api_contracts \
   https://github.com/Vellum-IO/keeper-api-contracts.git \
   main \
   --squash
@@ -29,7 +29,7 @@ And when an update is needed just execute:
 
 ```bash
 git subtree pull \
-  --prefix=openapi \
+  --prefix=keeper_api_contracts \
   https://github.com/Vellum-IO/keeper-api-contracts.git \
   main \
   --squash
