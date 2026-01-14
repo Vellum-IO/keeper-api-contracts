@@ -11,6 +11,7 @@ paths:
   /databases/{id}:
     get:
       summary: Get database details
+      operationId: GetDatabase
       deprecated: false
       description: >-
         Retrieves detailed information about a specific database instance,
@@ -59,6 +60,7 @@ paths:
         - oidcAuth: []
     patch:
       summary: Update database specification
+      operationId: UpdateDatabase
       deprecated: false
       description: >-
         Updates the resource specifications (CPU, RAM, storage, backup settings)
@@ -130,6 +132,7 @@ paths:
         - oidcAuth: []
     delete:
       summary: Deprovision database
+      operationId: DeleteDatabase
       deprecated: false
       description: >-
         Marks a database instance for deletion. The database will be
@@ -172,6 +175,7 @@ paths:
   /databases:
     get:
       summary: List databases
+      operationId: ListDatabasesForTeam
       deprecated: false
       description: >-
         Retrieves a list of all database instances for the specified team.
@@ -233,6 +237,7 @@ paths:
         - oidcAuth: []
     post:
       summary: Provision a new database
+      operationId: CreateDatabase
       deprecated: false
       description: >-
         Creates a new database instance with the specified resource
@@ -274,6 +279,7 @@ paths:
   /databases/{id}/credentials:
     get:
       summary: Retrieve sensitive credentials
+      operationId: GetDatabaseCredentials
       deprecated: false
       description: >-
         Retrieves the database credentials (username and password) for a
@@ -319,6 +325,7 @@ paths:
   /teams:
     get:
       summary: List teams for the current user
+      operationId: ListTeamsForCurrentUser
       deprecated: false
       description: >-
         Retrieves a list of all teams that the authenticated user is a member
@@ -368,6 +375,7 @@ paths:
         - oidcAuth: []
     post:
       summary: Create a new team
+      operationId: CreateTeam
       deprecated: false
       description: >-
         Creates a new team with the specified name. The authenticated user will
@@ -408,6 +416,7 @@ paths:
   /teams/{id}:
     get:
       summary: Get team details and quotas
+      operationId: GetTeam
       deprecated: false
       description: >-
         Retrieves detailed information about a specific team, including its
@@ -453,6 +462,7 @@ paths:
   /teams/{id}/members:
     get:
       summary: List members of a team
+      operationId: ListTeamMembers
       deprecated: false
       description: >-
         Retrieves a list of all members belonging to the specified team,
@@ -516,6 +526,7 @@ paths:
         - oidcAuth: []
     post:
       summary: Add a member to the team
+      operationId: AddTeamMember
       deprecated: false
       description: >-
         Adds a new member to the team by email address. The user must already
@@ -568,6 +579,7 @@ paths:
   /teams/{id}/members/{user_id}:
     delete:
       summary: Remove a member
+      operationId: RemoveTeamMember
       deprecated: false
       description: >-
         Removes a member from the team. Only team owners can remove members. A
