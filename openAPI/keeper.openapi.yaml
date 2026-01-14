@@ -7,16 +7,17 @@ tags:
   - name: Databases
   - name: Teams
   - name: Members
+  - name: Users
 paths:
   /databases/{id}:
     get:
       summary: Get database details
-      operationId: GetDatabase
       deprecated: false
       description: >-
         Retrieves detailed information about a specific database instance,
         including its current status, specifications, and connection information
         (if available).
+      operationId: GetDatabase
       tags:
         - Databases
       parameters:
@@ -60,12 +61,12 @@ paths:
         - oidcAuth: []
     patch:
       summary: Update database specification
-      operationId: UpdateDatabase
       deprecated: false
       description: >-
         Updates the resource specifications (CPU, RAM, storage, backup settings)
         of a database instance. Requires a valid If-Match header with the
         current ETag value to prevent concurrent modification conflicts.
+      operationId: UpdateDatabase
       tags:
         - Databases
       parameters:
@@ -132,12 +133,12 @@ paths:
         - oidcAuth: []
     delete:
       summary: Deprovision database
-      operationId: DeleteDatabase
       deprecated: false
       description: >-
         Marks a database instance for deletion. The database will be
         deprovisioned asynchronously. Once marked, the status will change to
         DELETING.
+      operationId: DeleteDatabase
       tags:
         - Databases
       parameters:
@@ -175,12 +176,12 @@ paths:
   /databases:
     get:
       summary: List databases
-      operationId: ListDatabasesForTeam
       deprecated: false
       description: >-
         Retrieves a list of all database instances for the specified team.
         Returns an array of database instances with their current status and
         specifications.
+      operationId: ListDatabasesForTeam
       tags:
         - Databases
       parameters:
@@ -237,12 +238,12 @@ paths:
         - oidcAuth: []
     post:
       summary: Provision a new database
-      operationId: CreateDatabase
       deprecated: false
       description: >-
         Creates a new database instance with the specified resource
         specifications. The database will be provisioned asynchronously and will
         initially have a PENDING status.
+      operationId: CreateDatabase
       tags:
         - Databases
       parameters: []
@@ -279,12 +280,12 @@ paths:
   /databases/{id}/credentials:
     get:
       summary: Retrieve sensitive credentials
-      operationId: GetDatabaseCredentials
       deprecated: false
       description: >-
         Retrieves the database credentials (username and password) for a
         specific database instance. This endpoint should be used with caution as
         it returns sensitive information.
+      operationId: GetDatabaseCredentials
       tags: []
       parameters:
         - name: id
@@ -325,11 +326,11 @@ paths:
   /teams:
     get:
       summary: List teams for the current user
-      operationId: ListTeamsForCurrentUser
       deprecated: false
       description: >-
         Retrieves a list of all teams that the authenticated user is a member
         of, including team details and quota information.
+      operationId: ListTeamsForCurrentUser
       tags:
         - Teams
       parameters:
@@ -375,11 +376,11 @@ paths:
         - oidcAuth: []
     post:
       summary: Create a new team
-      operationId: CreateTeam
       deprecated: false
       description: >-
         Creates a new team with the specified name. The authenticated user will
         automatically be added as an owner of the team.
+      operationId: CreateTeam
       tags:
         - Teams
       parameters: []
@@ -416,11 +417,11 @@ paths:
   /teams/{id}:
     get:
       summary: Get team details and quotas
-      operationId: GetTeam
       deprecated: false
       description: >-
         Retrieves detailed information about a specific team, including its
         name, quota limits, and creation timestamp.
+      operationId: GetTeam
       tags:
         - Teams
       parameters:
@@ -462,11 +463,11 @@ paths:
   /teams/{id}/members:
     get:
       summary: List members of a team
-      operationId: ListTeamMembers
       deprecated: false
       description: >-
         Retrieves a list of all members belonging to the specified team,
         including their roles and join dates.
+      operationId: ListTeamMembers
       tags:
         - Members
       parameters:
@@ -526,12 +527,12 @@ paths:
         - oidcAuth: []
     post:
       summary: Add a member to the team
-      operationId: AddTeamMember
       deprecated: false
       description: >-
         Adds a new member to the team by email address. The user must already
         exist in the system (have logged in at least once via OIDC). Only team
         owners can add members.
+      operationId: AddTeamMember
       tags:
         - Members
       parameters:
@@ -579,11 +580,11 @@ paths:
   /teams/{id}/members/{user_id}:
     delete:
       summary: Remove a member
-      operationId: RemoveTeamMember
       deprecated: false
       description: >-
         Removes a member from the team. Only team owners can remove members. A
         team must have at least one owner.
+      operationId: RemoveTeamMember
       tags:
         - Members
       parameters:
@@ -621,6 +622,34 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
           description: Not found - the requested resource does not exist
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+          description: Internal server error
+      security:
+        - oidcAuth: []
+  /user:
+    get:
+      summary: Get current user details
+      deprecated: false
+      description: >-
+        Retrieves the authenticated user's details, including their ID, external ID
+        (OIDC 'sub' claim), email, and timestamps. If the user does not exist in
+        the database yet, they will be automatically created from the OIDC token
+        information.
+      operationId: GetOrCreateUser
+      tags:
+        - Users
+      parameters: []
+      responses:
+        '200':
+          description: User details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Unauthorized; authentication token is missing, invalid, or expired
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error
@@ -813,6 +842,37 @@ components:
         - user_id
         - email
         - role
+    User:
+      type: object
+      description: User information for the authenticated user
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the user
+        external_id:
+          type: string
+          maxLength: 255
+          description: The immutable 'sub' claim from OIDC provider
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: User's email address
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the user was created
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when the user was last updated
+      required:
+        - id
+        - external_id
+        - email
+        - created_at
+        - updated_at
     CreateTeamRequest:
       type: object
       properties:
@@ -855,12 +915,12 @@ components:
           description: Number of records per page
         next_page:
           type: integer
-          nullable: true
           description: Next page number, null if there is no next page
+          nullable: true
         prev_page:
           type: integer
-          nullable: true
           description: Previous page number, null if there is no previous page
+          nullable: true
       required:
         - total_records
         - current_page
