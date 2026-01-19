@@ -632,10 +632,10 @@ paths:
       summary: Get current user details
       deprecated: false
       description: >-
-        Retrieves the authenticated user's details, including their ID, external ID
-        (OIDC 'sub' claim), email, and timestamps. If the user does not exist in
-        the database yet, they will be automatically created from the OIDC token
-        information.
+        Retrieves the authenticated user's details, including their ID, external
+        ID (OIDC 'sub' claim), email, and timestamps. If the user does not exist
+        in the database yet, they will be automatically created from the OIDC
+        token information.
       operationId: GetOrCreateUser
       tags:
         - Users
@@ -647,9 +647,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+          headers: {}
         '401':
           $ref: '#/components/responses/Unauthorized'
-          description: Unauthorized; authentication token is missing, invalid, or expired
+          description: Unauthorized - authentication token is missing, invalid, or expired
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error
@@ -705,13 +706,16 @@ components:
       properties:
         cpu_millicores:
           type: integer
-          minimum: 100
+          minimum: 500
+          maximum: 256000
         ram_mb:
           type: integer
-          minimum: 256
+          minimum: 1024
+          maximum: 1000000
         storage_gb:
           type: integer
           minimum: 1
+          maximum: 5000
         is_backup_enabled:
           type: boolean
       required:
@@ -749,17 +753,25 @@ components:
     CreateDatabaseRequest:
       type: object
       properties:
-        name:
+        instance_name:
           type: string
-          pattern: ^[a-z0-9-]+$
-          maxLength: 63
+          pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+          maxLength: 30
+          minLength: 3
+          description: Unique identifier for the PostgreSQL server deployment in Kubernetes
+        database_name:
+          type: string
+          description: Name of the initial logical database created inside the instance.
+          pattern: ^[a-z][a-z0-9_]*$
+          minLength: 3
+          maxLength: 60
         team_id:
           type: string
           format: uuid
         spec:
           $ref: '#/components/schemas/DatabaseSpec'
       required:
-        - name
+        - instance_name
         - team_id
         - spec
     UpdateDatabaseRequest:
@@ -842,37 +854,6 @@ components:
         - user_id
         - email
         - role
-    User:
-      type: object
-      description: User information for the authenticated user
-      properties:
-        id:
-          type: string
-          format: uuid
-          description: Unique identifier for the user
-        external_id:
-          type: string
-          maxLength: 255
-          description: The immutable 'sub' claim from OIDC provider
-        email:
-          type: string
-          format: email
-          maxLength: 255
-          description: User's email address
-        created_at:
-          type: string
-          format: date-time
-          description: Timestamp when the user was created
-        updated_at:
-          type: string
-          format: date-time
-          description: Timestamp when the user was last updated
-      required:
-        - id
-        - external_id
-        - email
-        - created_at
-        - updated_at
     CreateTeamRequest:
       type: object
       properties:
@@ -964,6 +945,37 @@ components:
       required:
         - data
         - pagination
+    User:
+      type: object
+      description: User information for the authenticated user
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the user
+        external_id:
+          type: string
+          maxLength: 255
+          description: The immutable 'sub' claim from OIDC provider
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: User's email address
+        created_at:
+          type: string
+          format: date-time
+          description: Timestamp when the user was created
+        updated_at:
+          type: string
+          format: date-time
+          description: Timestamp when the user was last updated
+      required:
+        - id
+        - external_id
+        - email
+        - created_at
+        - updated_at
   responses:
     BadRequest:
       description: Bad request - malformed request or validation error
