@@ -46,6 +46,9 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
           description: Bad request - malformed request or validation error
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+          description: Unauthorized - authentication
         '403':
           $ref: '#/components/responses/Forbidden'
           description: >-
@@ -58,7 +61,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error
       security:
-        - oidcAuth: []
+        - oidcAuth: [ ]
     patch:
       summary: Update database specification
       deprecated: false
@@ -125,12 +128,12 @@ paths:
           description: >-
             Version conflict. The ETag value in If-Match header does not match
             the current version. Fetch latest data and retry.
-          headers: {}
+          headers: { }
         '500':
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error
       security:
-        - oidcAuth: []
+        - oidcAuth: [ ]
     delete:
       summary: Deprovision database
       deprecated: false
@@ -153,7 +156,7 @@ paths:
       responses:
         '204':
           description: Database marked for deletion
-          headers: {}
+          headers: { }
         '400':
           $ref: '#/components/responses/BadRequest'
           description: Bad request - malformed request or validation error
@@ -172,7 +175,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error
       security:
-        - oidcAuth: []
+        - oidcAuth: [ ]
   /databases:
     get:
       summary: List databases
@@ -219,7 +222,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DatabaseListResponse'
-          headers: {}
+          headers: { }
         '400':
           $ref: '#/components/responses/BadRequest'
           description: Bad request - malformed request or validation error
@@ -235,7 +238,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error
       security:
-        - oidcAuth: []
+        - oidcAuth: [ ]
     post:
       summary: Provision a new database
       deprecated: false
@@ -246,7 +249,7 @@ paths:
       operationId: CreateDatabase
       tags:
         - Databases
-      parameters: []
+      parameters: [ ]
       requestBody:
         content:
           application/json:
@@ -260,7 +263,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DatabaseInstance'
-          headers: {}
+          headers: { }
         '400':
           $ref: '#/components/responses/BadRequest'
           description: Bad request - malformed request or validation error
@@ -276,7 +279,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error
       security:
-        - oidcAuth: []
+        - oidcAuth: [ ]
   /databases/{id}/credentials:
     get:
       summary: Retrieve sensitive credentials
@@ -286,7 +289,7 @@ paths:
         specific database instance. This endpoint should be used with caution as
         it returns sensitive information.
       operationId: GetDatabaseCredentials
-      tags: []
+      tags: [ ]
       parameters:
         - name: id
           in: path
@@ -303,7 +306,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DatabaseCredentials'
-          headers: {}
+          headers: { }
         '400':
           $ref: '#/components/responses/BadRequest'
           description: Bad request - malformed request or validation error
@@ -322,7 +325,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error
       security:
-        - oidcAuth: []
+        - oidcAuth: [ ]
   /teams:
     get:
       summary: List teams for the current user
@@ -360,7 +363,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TeamListResponse'
-          headers: {}
+          headers: { }
         '401':
           $ref: '#/components/responses/Unauthorized'
           description: Unauthorized - authentication token is missing, invalid, or expired
@@ -373,7 +376,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error
       security:
-        - oidcAuth: []
+        - oidcAuth: [ ]
     post:
       summary: Create a new team
       deprecated: false
@@ -383,7 +386,7 @@ paths:
       operationId: CreateTeam
       tags:
         - Teams
-      parameters: []
+      parameters: [ ]
       requestBody:
         content:
           application/json:
@@ -397,7 +400,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Team'
-          headers: {}
+          headers: { }
         '400':
           $ref: '#/components/responses/BadRequest'
           description: Bad request - malformed request or validation error
@@ -413,7 +416,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error
       security:
-        - oidcAuth: []
+        - oidcAuth: [ ]
   /teams/{id}:
     get:
       summary: Get team details and quotas
@@ -440,7 +443,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Team'
-          headers: {}
+          headers: { }
         '400':
           $ref: '#/components/responses/BadRequest'
           description: Bad request - malformed request or validation error
@@ -459,7 +462,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error
       security:
-        - oidcAuth: []
+        - oidcAuth: [ ]
   /teams/{id}/members:
     get:
       summary: List members of a team
@@ -505,7 +508,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TeamMemberListResponse'
-          headers: {}
+          headers: { }
         '400':
           $ref: '#/components/responses/BadRequest'
           description: Bad request - malformed request or validation error
@@ -524,7 +527,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error
       security:
-        - oidcAuth: []
+        - oidcAuth: [ ]
     post:
       summary: Add a member to the team
       deprecated: false
@@ -557,7 +560,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TeamMember'
-          headers: {}
+          headers: { }
         '400':
           $ref: '#/components/responses/BadRequest'
           description: Bad request - malformed request or validation error
@@ -576,7 +579,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error
       security:
-        - oidcAuth: []
+        - oidcAuth: [ ]
   /teams/{id}/members/{user_id}:
     delete:
       summary: Remove a member
@@ -607,7 +610,7 @@ paths:
       responses:
         '204':
           description: Member removed
-          headers: {}
+          headers: { }
         '400':
           $ref: '#/components/responses/BadRequest'
           description: Bad request - malformed request or validation error
@@ -626,7 +629,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error
       security:
-        - oidcAuth: []
+        - oidcAuth: [ ]
   /user:
     get:
       summary: Get current user details
@@ -639,7 +642,7 @@ paths:
       operationId: GetOrCreateUser
       tags:
         - Users
-      parameters: []
+      parameters: [ ]
       responses:
         '200':
           description: User details retrieved successfully
@@ -647,7 +650,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
-          headers: {}
+          headers: { }
         '401':
           $ref: '#/components/responses/Unauthorized'
           description: Unauthorized - authentication token is missing, invalid, or expired
@@ -655,7 +658,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
           description: Internal server error
       security:
-        - oidcAuth: []
+        - oidcAuth: [ ]
 components:
   schemas:
     DatabaseInstance:
@@ -1017,6 +1020,6 @@ components:
       description: >-
         OIDC JWT Bearer token authentication. Tokens are obtained from the OIDC
         provider at https://idp.domain.com
-servers: []
+servers: [ ]
 security:
-  - oidcAuth: []
+  - oidcAuth: [ ]
