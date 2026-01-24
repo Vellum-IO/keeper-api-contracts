@@ -1,0 +1,71 @@
+asyncapi: "2.6.0"
+info:
+  title: Keeper Backend API
+  version: "1.0.0"
+  description: |
+    Specification for the Keeper Backend Control Plane.
+    - Publishes Commands (Create/Update/Delete)
+    - Subscribes to Events (Status/Credentials)
+
+servers:
+  production:
+    url: nats://nats.internal:4222
+    protocol: nats
+    description: Production NATS Cluster
+
+channels:
+  # --------
+  # COMMANDS
+  # --------
+  dbaas.cluster.{clusterId}.command.create:
+    parameters:
+      clusterId:
+        schema: { type: string }
+    publish:
+      operationId: sendCreateCommand
+      summary: Order a new Database
+      message:
+        $ref: "./common_components.yaml#/components/messages/CreateDatabase"
+
+  dbaas.cluster.{clusterId}.command.update:
+    parameters:
+      clusterId:
+        schema: { type: string }
+    publish:
+      operationId: sendUpdateCommand
+      summary: Update existing Database specs
+      message:
+        $ref: "./common_components.yaml#/components/messages/UpdateDatabase"
+
+  dbaas.cluster.{clusterId}.command.delete:
+    parameters:
+      clusterId:
+        schema: { type: string }
+    publish:
+      operationId: sendDeleteCommand
+      summary: Deprovision a Database
+      message:
+        $ref: "./common_components.yaml#/components/messages/DeleteDatabase"
+
+  # ------
+  # EVENTS
+  # ------
+  dbaas.cluster.{clusterId}.event.status:
+    parameters:
+      clusterId:
+        schema: { type: string }
+    subscribe:
+      operationId: receiveStatusEvent
+      summary: Listen for state changes (Ready, Failed, etc)
+      message:
+        $ref: "./common_components.yaml#/components/messages/StatusEvent"
+
+  dbaas.cluster.{clusterId}.event.credentials:
+    parameters:
+      clusterId:
+        schema: { type: string }
+    subscribe:
+      operationId: receiveCredentialEvent
+      summary: Listen for new credentials/secrets
+      message:
+        $ref: "./common_components.yaml#/components/messages/CredentialEvent"

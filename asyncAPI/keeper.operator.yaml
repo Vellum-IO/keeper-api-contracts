@@ -1,0 +1,71 @@
+asyncapi: "2.6.0"
+info:
+  title: Keeper Operator Protocol
+  version: "1.0.0"
+  description: |
+    Specification for the Workload Cluster Operator.
+    - Subscribes to Commands (Create/Update/Delete)
+    - Publishes Events (Status/Credentials)
+
+servers:
+  production:
+    url: nats://nats.internal:4222
+    protocol: nats
+    description: Production NATS Cluster
+
+channels:
+  # --------
+  # COMMANDS
+  # --------
+  dbaas.cluster.{clusterId}.command.create:
+    parameters:
+      clusterId:
+        schema: { type: string }
+    subscribe:
+      operationId: receiveCreateCommand
+      summary: Handle new Database requests
+      message:
+        $ref: "./common_components.yaml#/components/messages/CreateDatabase"
+
+  dbaas.cluster.{clusterId}.command.update:
+    parameters:
+      clusterId:
+        schema: { type: string }
+    subscribe:
+      operationId: receiveUpdateCommand
+      summary: Handle Database modification requests
+      message:
+        $ref: "./common_components.yaml#/components/messages/UpdateDatabase"
+
+  dbaas.cluster.{clusterId}.command.delete:
+    parameters:
+      clusterId:
+        schema: { type: string }
+    subscribe:
+      operationId: receiveDeleteCommand
+      summary: Handle Database deprovisioning
+      message:
+        $ref: "./common_components.yaml#/components/messages/DeleteDatabase"
+
+  # ------
+  # EVENTS
+  # ------
+  dbaas.cluster.{clusterId}.event.status:
+    parameters:
+      clusterId:
+        schema: { type: string }
+    publish:
+      operationId: sendStatusEvent
+      summary: Report state changes (Provisioning, Ready, Failed)
+      message:
+        $ref: "./common_components.yaml#/components/messages/StatusEvent"
+
+  dbaas.cluster.{clusterId}.event.credentials:
+    parameters:
+      clusterId:
+        schema: { type: string }
+    publish:
+      operationId: sendCredentialEvent
+      summary: Publish generated credentials/secrets
+      message:
+        $ref: "./common_components.yaml#/components/messages/CredentialEvent"
