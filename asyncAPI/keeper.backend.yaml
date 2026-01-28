@@ -17,7 +17,7 @@ channels:
   # --------
   # COMMANDS
   # --------
-  dbaas.cluster.{clusterId}.command.create:
+  keeper.cluster.{clusterId}.command.create:
     parameters:
       clusterId:
         schema: { type: string }
@@ -27,7 +27,7 @@ channels:
       message:
         $ref: "./common_components.yaml#/components/messages/CreateDatabase"
 
-  dbaas.cluster.{clusterId}.command.update:
+  keeper.cluster.{clusterId}.command.update:
     parameters:
       clusterId:
         schema: { type: string }
@@ -37,7 +37,7 @@ channels:
       message:
         $ref: "./common_components.yaml#/components/messages/UpdateDatabase"
 
-  dbaas.cluster.{clusterId}.command.delete:
+  keeper.cluster.{clusterId}.command.delete:
     parameters:
       clusterId:
         schema: { type: string }
@@ -50,7 +50,7 @@ channels:
   # ------
   # EVENTS
   # ------
-  dbaas.cluster.{clusterId}.event.status:
+  keeper.cluster.{clusterId}.event.status:
     parameters:
       clusterId:
         schema: { type: string }
@@ -60,7 +60,7 @@ channels:
       message:
         $ref: "./common_components.yaml#/components/messages/StatusEvent"
 
-  dbaas.cluster.{clusterId}.event.credentials:
+  keeper.cluster.{clusterId}.event.credentials:
     parameters:
       clusterId:
         schema: { type: string }
