@@ -177,10 +177,6 @@ components:
             description: PostgreSQL version to deploy (e.g., "18.0")
             pattern: ^\d+\.\d+(\.\d+)?$
             example: "18.0"
-          is_backup_enabled:
-            type: boolean
-            description: Whether automated backups should be enabled for this database
-            default: true
           resources:
             $ref: "#/components/schemas/ResourceSpec"
 
@@ -210,9 +206,6 @@ components:
             type: string
             description: If present, triggers an upgrade to the specified PostgreSQL version
             pattern: ^\d+\.\d+(\.\d+)?$
-          is_backup_enabled:
-            type: boolean
-            description: Whether automated backups should be enabled for this database
           resources:
             $ref: "#/components/schemas/ResourceSpec"
 
