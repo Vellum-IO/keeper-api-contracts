@@ -19,9 +19,7 @@ channels:
         $ref: "#/components/messages/CreateDatabase"
     parameters:
       clusterId:
-        description: >-
-          Unique identifier for the Kubernetes cluster where the database will
-          be provisioned
+        $ref: "#/components/parameters/clusterId"
   updateCommand:
     address: "keeper.cluster.{clusterId}.command.update"
     messages:
@@ -29,9 +27,7 @@ channels:
         $ref: "#/components/messages/UpdateDatabase"
     parameters:
       clusterId:
-        description: >-
-          Unique identifier for the Kubernetes cluster where the database is
-          deployed
+        $ref: "#/components/parameters/clusterId"
   deleteCommand:
     address: "keeper.cluster.{clusterId}.command.delete"
     messages:
@@ -39,9 +35,7 @@ channels:
         $ref: "#/components/messages/DeleteDatabase"
     parameters:
       clusterId:
-        description: >-
-          Unique identifier for the Kubernetes cluster where the database is
-          deployed
+        $ref: "#/components/parameters/clusterId"
   statusEvent:
     address: "keeper.cluster.{clusterId}.event.status"
     messages:
@@ -49,9 +43,7 @@ channels:
         $ref: "#/components/messages/StatusEvent"
     parameters:
       clusterId:
-        description: >-
-          Unique identifier for the Kubernetes cluster where status events
-          originate
+        $ref: "#/components/parameters/clusterId"
   credentialEvent:
     address: "keeper.cluster.{clusterId}.event.credentials"
     messages:
@@ -59,9 +51,7 @@ channels:
         $ref: "#/components/messages/CredentialEvent"
     parameters:
       clusterId:
-        description: >-
-          Unique identifier for the Kubernetes cluster where credential events
-          originate
+        $ref: "#/components/parameters/clusterId"
 operations:
   createDatabase:
     action: receive
@@ -89,6 +79,9 @@ operations:
       $ref: "#/channels/credentialEvent"
     summary: Listen for new credentials/secrets
 components:
+  parameters:
+    clusterId:
+      description: Unique identifier for the Kubernetes cluster
   schemas:
     ResourceSpec:
       type: object
