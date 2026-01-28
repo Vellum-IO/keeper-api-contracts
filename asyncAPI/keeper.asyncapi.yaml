@@ -1,85 +1,88 @@
-asyncapi: "2.6.0"
+asyncapi: 3.0.0
 info:
   title: Keeper Backend API
-  version: "1.0.0"
+  version: 1.0.0
   description: |
     Specification for the Keeper Backend Control Plane.
     - Publishes Commands (Create/Update/Delete)
     - Subscribes to Events (Status/Credentials)
-
 servers:
   production:
-    url: nats://nats.internal:4222
+    host: "nats.internal:4222"
     protocol: nats
     description: Production NATS Cluster
-
 channels:
-  # --------
-  # COMMANDS
-  # --------
-  keeper.cluster.{clusterId}.command.create:
-    parameters:
-      clusterId:
-        schema: { type: string }
-        description: Unique identifier for the Kubernetes cluster where the database will be provisioned
-    publish:
-      operationId: sendCreateCommand
-      summary: Order a new Database
-      message:
+  createCommand:
+    address: "keeper.cluster.{clusterId}.command.create"
+    messages:
+      createDatabase:
         $ref: "#/components/messages/CreateDatabase"
-
-  keeper.cluster.{clusterId}.command.update:
     parameters:
       clusterId:
-        schema: { type: string }
-        description: Unique identifier for the Kubernetes cluster where the database is deployed
-    publish:
-      operationId: sendUpdateCommand
-      summary: Update existing Database specs
-      message:
+        $ref: "#/components/parameters/clusterId"
+  updateCommand:
+    address: "keeper.cluster.{clusterId}.command.update"
+    messages:
+      updateDatabase:
         $ref: "#/components/messages/UpdateDatabase"
-
-  keeper.cluster.{clusterId}.command.delete:
     parameters:
       clusterId:
-        schema: { type: string }
-        description: Unique identifier for the Kubernetes cluster where the database is deployed
-    publish:
-      operationId: sendDeleteCommand
-      summary: Deprovision a Database
-      message:
+        $ref: "#/components/parameters/clusterId"
+  deleteCommand:
+    address: "keeper.cluster.{clusterId}.command.delete"
+    messages:
+      deleteDatabase:
         $ref: "#/components/messages/DeleteDatabase"
-
-  # ------
-  # EVENTS
-  # ------
-  keeper.cluster.{clusterId}.event.status:
     parameters:
       clusterId:
-        schema: { type: string }
-        description: Unique identifier for the Kubernetes cluster where status events originate
-    subscribe:
-      operationId: receiveStatusEvent
-      summary: Listen for state changes (PENDING, PROVISIONING, READY, FAILED, DELETING)
-      message:
+        $ref: "#/components/parameters/clusterId"
+  statusEvent:
+    address: "keeper.cluster.{clusterId}.event.status"
+    messages:
+      statusEvent:
         $ref: "#/components/messages/StatusEvent"
-
-  keeper.cluster.{clusterId}.event.credentials:
     parameters:
       clusterId:
-        schema: { type: string }
-        description: Unique identifier for the Kubernetes cluster where credential events originate
-    subscribe:
-      operationId: receiveCredentialEvent
-      summary: Listen for new credentials/secrets
-      message:
+        $ref: "#/components/parameters/clusterId"
+  credentialEvent:
+    address: "keeper.cluster.{clusterId}.event.credentials"
+    messages:
+      credentialEvent:
         $ref: "#/components/messages/CredentialEvent"
-
+    parameters:
+      clusterId:
+        $ref: "#/components/parameters/clusterId"
+operations:
+  createDatabase:
+    action: receive
+    channel:
+      $ref: "#/channels/createCommand"
+    summary: Order a new Database
+  updateDatabase:
+    action: receive
+    channel:
+      $ref: "#/channels/updateCommand"
+    summary: Update existing Database specs
+  deleteDatabase:
+    action: receive
+    channel:
+      $ref: "#/channels/deleteCommand"
+    summary: Deprovision a Database
+  statusEvent:
+    action: send
+    channel:
+      $ref: "#/channels/statusEvent"
+    summary: "Listen for state changes (PENDING, PROVISIONING, READY, FAILED, DELETING)"
+  credentialEvent:
+    action: send
+    channel:
+      $ref: "#/channels/credentialEvent"
+    summary: Listen for new credentials/secrets
 components:
+  parameters:
+    clusterId:
+      description: Unique identifier for the Kubernetes cluster
   schemas:
-    # -----------------------
-    # Reusable Data Objects
-    # -----------------------
     ResourceSpec:
       type: object
       description: Compute and Storage requirements
@@ -106,7 +109,6 @@ components:
         is_backup_enabled:
           type: boolean
           description: Whether backups are enabled for this database
-
     StatusCondition:
       type: object
       description: Kubernetes-style status condition
@@ -118,11 +120,21 @@ components:
         type:
           type: string
           description: Condition type indicating the state of the database
-          enum: ["PENDING", "PROVISIONING", "READY", "FAILED", "DELETING"]
+          enum:
+            - PENDING
+            - PROVISIONING
+            - READY
+            - FAILED
+            - DELETING
         status:
           type: string
-          description: Status of the condition (True if condition is met, False if not, Unknown if status cannot be determined)
-          enum: ["True", "False", "Unknown"]
+          description: >-
+            Status of the condition (True if condition is met, False if not,
+            Unknown if status cannot be determined)
+          enum:
+            - "True"
+            - "False"
+            - Unknown
         reason:
           type: string
           description: CamelCase machine-readable reason (e.g. QuotaExceeded)
@@ -133,11 +145,7 @@ components:
           type: string
           format: date-time
           description: Timestamp when the condition last transitioned to its current status
-
   messages:
-    # -----------------------
-    # Command Payloads
-    # -----------------------
     CreateDatabase:
       name: CreateDatabase
       title: Create Database Payload
@@ -162,24 +170,25 @@ components:
             description: Unique Platform ID (generated by Backend)
           instance_name:
             type: string
-            description: Unique identifier for the PostgreSQL server deployment in Kubernetes
-            pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
+            description: >-
+              Unique identifier for the PostgreSQL server deployment in
+              Kubernetes
+            pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
             minLength: 3
             maxLength: 30
           database_name:
             type: string
             description: Name of the initial logical database created inside the instance
-            pattern: ^[a-z][a-z0-9_]*$
+            pattern: "^[a-z][a-z0-9_]*$"
             minLength: 3
             maxLength: 60
           pg_version:
             type: string
-            description: PostgreSQL version to deploy (e.g., "18.0")
+            description: 'PostgreSQL version to deploy (e.g., "18.0")'
             pattern: ^\d+\.\d+(\.\d+)?$
             example: "18.0"
           resources:
             $ref: "#/components/schemas/ResourceSpec"
-
     UpdateDatabase:
       name: UpdateDatabase
       title: Update Database Payload
@@ -201,14 +210,17 @@ components:
             description: Unique Platform ID of the database to update
           instance_name:
             type: string
-            description: The name of the instance to update (name has to match an existing instance name)
+            description: >-
+              The name of the instance to update (name has to match an existing
+              instance name)
           pg_version:
             type: string
-            description: If present, triggers an upgrade to the specified PostgreSQL version
+            description: >-
+              If present, triggers an upgrade to the specified PostgreSQL
+              version
             pattern: ^\d+\.\d+(\.\d+)?$
           resources:
             $ref: "#/components/schemas/ResourceSpec"
-
     DeleteDatabase:
       name: DeleteDatabase
       title: Delete Database Payload
@@ -230,11 +242,9 @@ components:
             description: Unique Platform ID of the database to delete
           instance_name:
             type: string
-            description: Unique identifier for the PostgreSQL server deployment in Kubernetes
-
-    # -----------------------
-    # Event Payloads
-    # -----------------------
+            description: >-
+              Unique identifier for the PostgreSQL server deployment in
+              Kubernetes
     StatusEvent:
       name: StatusEvent
       title: Status Change Event
@@ -256,7 +266,6 @@ components:
             description: Timestamp when the status event occurred
           condition:
             $ref: "#/components/schemas/StatusCondition"
-
     CredentialEvent:
       name: CredentialEvent
       title: Connection Secrets Event
@@ -270,7 +279,9 @@ components:
           db_uuid:
             type: string
             format: uuid
-            description: Unique Platform ID of the database for which credentials are provided
+            description: >-
+              Unique Platform ID of the database for which credentials are
+              provided
           connection_details:
             type: object
             description: Database connection credentials and connection information
@@ -287,7 +298,9 @@ components:
                 description: Database password for authentication
               connection_string:
                 type: string
-                description: Full connection string (host, port, database name) for connecting to the database
+                description: >-
+                  Full connection string (host, port, database name) for
+                  connecting to the database
               tls_certs:
                 type: object
                 description: TLS certificate files for secure database connections
