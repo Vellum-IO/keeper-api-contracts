@@ -1,8 +1,79 @@
 asyncapi: "2.6.0"
 info:
-  title: DBaaS Shared Components
+  title: Keeper Backend API
   version: "1.0.0"
-  description: Shared message definitions and schemas for Backend and Operator.
+  description: |
+    Specification for the Keeper Backend Control Plane.
+    - Publishes Commands (Create/Update/Delete)
+    - Subscribes to Events (Status/Credentials)
+
+servers:
+  production:
+    url: nats://nats.internal:4222
+    protocol: nats
+    description: Production NATS Cluster
+
+channels:
+  # --------
+  # COMMANDS
+  # --------
+  keeper.cluster.{clusterId}.command.create:
+    parameters:
+      clusterId:
+        schema: { type: string }
+        description: Unique identifier for the Kubernetes cluster where the database will be provisioned
+    publish:
+      operationId: sendCreateCommand
+      summary: Order a new Database
+      message:
+        $ref: "#/components/messages/CreateDatabase"
+
+  keeper.cluster.{clusterId}.command.update:
+    parameters:
+      clusterId:
+        schema: { type: string }
+        description: Unique identifier for the Kubernetes cluster where the database is deployed
+    publish:
+      operationId: sendUpdateCommand
+      summary: Update existing Database specs
+      message:
+        $ref: "#/components/messages/UpdateDatabase"
+
+  keeper.cluster.{clusterId}.command.delete:
+    parameters:
+      clusterId:
+        schema: { type: string }
+        description: Unique identifier for the Kubernetes cluster where the database is deployed
+    publish:
+      operationId: sendDeleteCommand
+      summary: Deprovision a Database
+      message:
+        $ref: "#/components/messages/DeleteDatabase"
+
+  # ------
+  # EVENTS
+  # ------
+  keeper.cluster.{clusterId}.event.status:
+    parameters:
+      clusterId:
+        schema: { type: string }
+        description: Unique identifier for the Kubernetes cluster where status events originate
+    subscribe:
+      operationId: receiveStatusEvent
+      summary: Listen for state changes (PENDING, PROVISIONING, READY, FAILED, DELETING)
+      message:
+        $ref: "#/components/messages/StatusEvent"
+
+  keeper.cluster.{clusterId}.event.credentials:
+    parameters:
+      clusterId:
+        schema: { type: string }
+        description: Unique identifier for the Kubernetes cluster where credential events originate
+    subscribe:
+      operationId: receiveCredentialEvent
+      summary: Listen for new credentials/secrets
+      message:
+        $ref: "#/components/messages/CredentialEvent"
 
 components:
   schemas:
@@ -46,9 +117,11 @@ components:
       properties:
         type:
           type: string
-          enum: ["Ready", "Provisioning", "BackingUp", "Degraded", "Stopped"]
+          description: Condition type indicating the state of the database
+          enum: ["PENDING", "PROVISIONING", "READY", "FAILED", "DELETING"]
         status:
           type: string
+          description: Status of the condition (True if condition is met, False if not, Unknown if status cannot be determined)
           enum: ["True", "False", "Unknown"]
         reason:
           type: string
@@ -59,6 +132,7 @@ components:
         last_transition_time:
           type: string
           format: date-time
+          description: Timestamp when the condition last transitioned to its current status
 
   messages:
     # -----------------------
@@ -74,7 +148,7 @@ components:
           - team_id
           - db_uuid
           - instance_name
-          - db_name
+          - database_name
           - pg_version
           - resources
         properties:
@@ -92,7 +166,7 @@ components:
             pattern: ^[a-z0-9]([-a-z0-9]*[a-z0-9])?$
             minLength: 3
             maxLength: 30
-          db_name:
+          database_name:
             type: string
             description: Name of the initial logical database created inside the instance
             pattern: ^[a-z][a-z0-9_]*$
@@ -100,9 +174,12 @@ components:
             maxLength: 60
           pg_version:
             type: string
-            example: "15.3"
-          backup_enabled:
+            description: PostgreSQL version to deploy (e.g., "18.0")
+            pattern: ^\d+\.\d+(\.\d+)?$
+            example: "18.0"
+          is_backup_enabled:
             type: boolean
+            description: Whether automated backups should be enabled for this database
             default: true
           resources:
             $ref: "#/components/schemas/ResourceSpec"
@@ -121,17 +198,21 @@ components:
           team_id:
             type: string
             format: uuid
+            description: Team ID that owns the database
           db_uuid:
             type: string
             format: uuid
+            description: Unique Platform ID of the database to update
           instance_name:
             type: string
-            description: New name (if renaming)
+            description: The name of the instance to update (name has to match an existing instance name)
           pg_version:
             type: string
-            description: If present, triggers an upgrade
-          backup_enabled:
+            description: If present, triggers an upgrade to the specified PostgreSQL version
+            pattern: ^\d+\.\d+(\.\d+)?$
+          is_backup_enabled:
             type: boolean
+            description: Whether automated backups should be enabled for this database
           resources:
             $ref: "#/components/schemas/ResourceSpec"
 
@@ -149,11 +230,14 @@ components:
           team_id:
             type: string
             format: uuid
+            description: Team ID that owns the database
           db_uuid:
             type: string
             format: uuid
+            description: Unique Platform ID of the database to delete
           instance_name:
             type: string
+            description: Unique identifier for the PostgreSQL server deployment in Kubernetes
 
     # -----------------------
     # Event Payloads
@@ -172,9 +256,11 @@ components:
           db_uuid:
             type: string
             format: uuid
+            description: Unique Platform ID of the database whose status changed
           timestamp:
             type: string
             format: date-time
+            description: Timestamp when the status event occurred
           condition:
             $ref: "#/components/schemas/StatusCondition"
 
@@ -191,19 +277,34 @@ components:
           db_uuid:
             type: string
             format: uuid
+            description: Unique Platform ID of the database for which credentials are provided
           connection_details:
             type: object
+            description: Database connection credentials and connection information
             required:
               - username
               - password
               - connection_string
             properties:
-              username: { type: string }
-              password: { type: string }
-              connection_string: { type: string }
+              username:
+                type: string
+                description: Database username for authentication
+              password:
+                type: string
+                description: Database password for authentication
+              connection_string:
+                type: string
+                description: Full connection string (host, port, database name) for connecting to the database
               tls_certs:
                 type: object
+                description: TLS certificate files for secure database connections
                 properties:
-                  ca: { type: string }
-                  cert: { type: string }
-                  key: { type: string }
+                  ca:
+                    type: string
+                    description: Certificate Authority (CA) certificate in PEM format
+                  cert:
+                    type: string
+                    description: Client certificate in PEM format
+                  key:
+                    type: string
+                    description: Client private key in PEM format
