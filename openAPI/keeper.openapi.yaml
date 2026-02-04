@@ -721,6 +721,14 @@ components:
           maximum: 5000
         is_backup_enabled:
           type: boolean
+        postgres_version:
+          type: string
+          pattern: ^\d+(\.\d+)?(\.\d+)?$
+          description: PostgreSQL version as X, X.X, or X.X.X (e.g. 14, 14.5, 14.5.1). Valid versions are enforced by the backend.
+          example: '14.5.1'
+        high_availability_enabled:
+          type: boolean
+          description: When true, the database runs with 3 replicas (HA). When false, it runs with 1 replica.
       required:
         - cpu_millicores
         - ram_mb
