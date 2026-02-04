@@ -1,87 +1,91 @@
-asyncapi: 3.0.0
+asyncapi: 3.1.0
 info:
   title: Keeper Backend API
   version: 1.0.0
-  description: |
+  description: >
     Specification for the Keeper Backend Control Plane.
-    - Publishes Commands (Create/Update/Delete)
+
+    - Publishes Commands: declarative spec (create/update reconciled by
+    operator) and delete.
+
+    - Spec subject includes database ID so only one message per database is
+    relevant (newest wins).
+
     - Subscribes to Events (Status/Credentials)
 servers:
   production:
-    host: "nats.internal:4222"
+    host: 'nats.internal:4222'
     protocol: nats
     description: Production NATS Cluster
 channels:
-  createCommand:
-    address: "keeper.cluster.{clusterId}.command.create"
+  specCommand:
+    address: 'keeper.cluster.{clusterId}.command.spec.{databaseId}'
+    description: >-
+      Declarative desired spec for a database. Operator reconciles (create or
+      update). One message per database; newest wins when queued.
     messages:
-      createDatabase:
-        $ref: "#/components/messages/CreateDatabase"
+      databaseSpec:
+        $ref: '#/components/messages/DatabaseSpec'
     parameters:
       clusterId:
-        $ref: "#/components/parameters/clusterId"
-  updateCommand:
-    address: "keeper.cluster.{clusterId}.command.update"
-    messages:
-      updateDatabase:
-        $ref: "#/components/messages/UpdateDatabase"
-    parameters:
-      clusterId:
-        $ref: "#/components/parameters/clusterId"
+        $ref: '#/components/parameters/clusterId'
+      databaseId:
+        $ref: '#/components/parameters/databaseId'
   deleteCommand:
-    address: "keeper.cluster.{clusterId}.command.delete"
+    address: 'keeper.cluster.{clusterId}.command.delete'
     messages:
       deleteDatabase:
-        $ref: "#/components/messages/DeleteDatabase"
+        $ref: '#/components/messages/DeleteDatabase'
     parameters:
       clusterId:
-        $ref: "#/components/parameters/clusterId"
+        $ref: '#/components/parameters/clusterId'
   statusEvent:
-    address: "keeper.cluster.{clusterId}.event.status"
+    address: 'keeper.cluster.{clusterId}.event.status'
     messages:
       statusEvent:
-        $ref: "#/components/messages/StatusEvent"
+        $ref: '#/components/messages/StatusEvent'
     parameters:
       clusterId:
-        $ref: "#/components/parameters/clusterId"
+        $ref: '#/components/parameters/clusterId'
   credentialEvent:
-    address: "keeper.cluster.{clusterId}.event.credentials"
+    address: 'keeper.cluster.{clusterId}.event.credentials'
     messages:
       credentialEvent:
-        $ref: "#/components/messages/CredentialEvent"
+        $ref: '#/components/messages/CredentialEvent'
     parameters:
       clusterId:
-        $ref: "#/components/parameters/clusterId"
+        $ref: '#/components/parameters/clusterId'
 operations:
-  createDatabase:
+  sendDatabaseSpec:
     action: receive
     channel:
-      $ref: "#/channels/createCommand"
-    summary: Order a new Database
-  updateDatabase:
-    action: receive
-    channel:
-      $ref: "#/channels/updateCommand"
-    summary: Update existing Database specs
+      $ref: '#/channels/specCommand'
+    summary: >-
+      Send desired database spec; operator reconciles (create or update).
+      Subject includes database ID so only newest spec per database is used.
   deleteDatabase:
     action: receive
     channel:
-      $ref: "#/channels/deleteCommand"
+      $ref: '#/channels/deleteCommand'
     summary: Deprovision a Database
   statusEvent:
     action: send
     channel:
-      $ref: "#/channels/statusEvent"
-    summary: "Listen for state changes (PENDING, PROVISIONING, READY, FAILED, DELETING)"
+      $ref: '#/channels/statusEvent'
+    summary: 'Listen for state changes (PENDING, PROVISIONING, READY, FAILED, DELETING)'
   credentialEvent:
     action: send
     channel:
-      $ref: "#/channels/credentialEvent"
+      $ref: '#/channels/credentialEvent'
     summary: Listen for new credentials/secrets
 components:
   parameters:
     clusterId:
       description: Unique identifier for the Kubernetes cluster
+    databaseId:
+      description: >-
+        Unique platform ID of the database (UUID). Included in subject so only
+        one message per database is relevant in the queue.
   schemas:
     ResourceSpec:
       type: object
@@ -109,6 +113,18 @@ components:
         is_backup_enabled:
           type: boolean
           description: Whether backups are enabled for this database
+        postgres_version:
+          type: string
+          pattern: ^\d+(\.\d+)?(\.\d+)?$
+          description: >-
+            PostgreSQL version as X, X.X, or X.X.X (e.g. 14, 14.5, 14.5.1).
+            Valid versions enforced by backend.
+          example: 14.5.1
+        high_availability_enabled:
+          type: boolean
+          description: >-
+            When true, database runs with 3 replicas (HA); when false, 1
+            replica.
     StatusCondition:
       type: object
       description: Kubernetes-style status condition
@@ -132,8 +148,8 @@ components:
             Status of the condition (True if condition is met, False if not,
             Unknown if status cannot be determined)
           enum:
-            - "True"
-            - "False"
+            - 'True'
+            - 'False'
             - Unknown
         reason:
           type: string
@@ -146,10 +162,14 @@ components:
           format: date-time
           description: Timestamp when the condition last transitioned to its current status
   messages:
-    CreateDatabase:
-      name: CreateDatabase
-      title: Create Database Payload
+    DatabaseSpec:
+      name: DatabaseSpec
+      title: Database Spec Payload (declarative)
       contentType: application/json
+      description: >-
+        Desired state for a database. Operator reconciles (creates or updates).
+        Only the newest message per database (subject includes database ID) is
+        used.
       payload:
         type: object
         required:
@@ -157,7 +177,6 @@ components:
           - db_uuid
           - instance_name
           - database_name
-          - pg_version
           - resources
         properties:
           team_id:
@@ -167,60 +186,25 @@ components:
           db_uuid:
             type: string
             format: uuid
-            description: Unique Platform ID (generated by Backend)
+            description: >-
+              Unique Platform ID (generated by Backend); must match databaseId
+              in channel subject
           instance_name:
             type: string
             description: >-
               Unique identifier for the PostgreSQL server deployment in
               Kubernetes
-            pattern: "^[a-z0-9]([-a-z0-9]*[a-z0-9])?$"
+            pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
             minLength: 3
             maxLength: 30
           database_name:
             type: string
             description: Name of the initial logical database created inside the instance
-            pattern: "^[a-z][a-z0-9_]*$"
+            pattern: '^[a-z][a-z0-9_]*$'
             minLength: 3
             maxLength: 60
-          pg_version:
-            type: string
-            description: 'PostgreSQL version to deploy (e.g., "18.0")'
-            pattern: ^\d+\.\d+(\.\d+)?$
-            example: "18.0"
           resources:
-            $ref: "#/components/schemas/ResourceSpec"
-    UpdateDatabase:
-      name: UpdateDatabase
-      title: Update Database Payload
-      contentType: application/json
-      payload:
-        type: object
-        required:
-          - team_id
-          - db_uuid
-          - instance_name
-        properties:
-          team_id:
-            type: string
-            format: uuid
-            description: Team ID that owns the database
-          db_uuid:
-            type: string
-            format: uuid
-            description: Unique Platform ID of the database to update
-          instance_name:
-            type: string
-            description: >-
-              The name of the instance to update (name has to match an existing
-              instance name)
-          pg_version:
-            type: string
-            description: >-
-              If present, triggers an upgrade to the specified PostgreSQL
-              version
-            pattern: ^\d+\.\d+(\.\d+)?$
-          resources:
-            $ref: "#/components/schemas/ResourceSpec"
+            $ref: '#/components/schemas/ResourceSpec'
     DeleteDatabase:
       name: DeleteDatabase
       title: Delete Database Payload
@@ -265,7 +249,7 @@ components:
             format: date-time
             description: Timestamp when the status event occurred
           condition:
-            $ref: "#/components/schemas/StatusCondition"
+            $ref: '#/components/schemas/StatusCondition'
     CredentialEvent:
       name: CredentialEvent
       title: Connection Secrets Event
