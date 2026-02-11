@@ -92,9 +92,9 @@ At the moment no one is allowed to use this commercially.
 - [ ] Add `412 Precondition Failed` response for invalid `If-Match` header in PATCH requests
 - [ ] Add `Location` header to `201` responses pointing to created resources
 - [ ] Consider `202 Accepted` for async operations with status endpoints
-- [ ] Add maximum values to `DatabaseSpec` (e.g., `cpu_millicores: maximum: 100000`)
+- [x] Add maximum values to `DatabaseSpec` (e.g., `cpu_m: maximum: 256000`); units are K8s-style (ram_mi, cpu_m, storage_gi)
 - [ ] Add rate limiting headers documentation (`X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`)
-- [ ] Add server URLs to OpenAPI specs (dev, staging, production environments)
+- [x] API base path documented in OpenAPI as `/api/v1`; add full server URLs (dev, staging, production) if needed
 - [ ] Add contact information to OpenAPI specs
 - [ ] Add examples to all schema properties
 
