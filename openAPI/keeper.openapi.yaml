@@ -662,6 +662,17 @@ paths:
         - oidcAuth: [ ]
 components:
   schemas:
+    Region:
+      type: string
+      description: Deployment region where the database is or will be provisioned.
+      enum:
+        - eu-west-1
+        - eu-central-1
+        - us-east-1
+        - us-west-2
+        - ca-central-1
+        - ap-southeast-1
+        - ap-northeast-1
     DatabaseInstance:
       type: object
       properties:
@@ -700,16 +711,7 @@ components:
           format: uuid
           description: User ID of the user who created this database instance
         region:
-          type: string
-          description: Deployment region (chosen at create time).
-          enum:
-            - eu-west-1
-            - eu-central-1
-            - us-east-1
-            - us-west-2
-            - ca-central-1
-            - ap-southeast-1
-            - ap-northeast-1
+          $ref: '#/components/schemas/Region'
       required:
         - id
         - name
@@ -765,6 +767,7 @@ components:
         - cpu_m
         - ram_mi
         - storage_gi
+        - authentication_methods
     ConnectionInfo:
       type: object
       description: >-
@@ -815,6 +818,10 @@ components:
         tls_certs:
           type: object
           description: Present when MTLS is enabled. Client cert material for mTLS.
+          required:
+            - ca
+            - cert
+            - key
           properties:
             ca:
               type: string
@@ -847,16 +854,7 @@ components:
           type: string
           format: uuid
         region:
-          type: string
-          description: Deployment region where the database will be provisioned.
-          enum:
-            - eu-west-1
-            - eu-central-1
-            - us-east-1
-            - us-west-2
-            - ca-central-1
-            - ap-southeast-1
-            - ap-northeast-1
+          $ref: '#/components/schemas/Region'
         spec:
           $ref: '#/components/schemas/DatabaseSpec'
       required:
