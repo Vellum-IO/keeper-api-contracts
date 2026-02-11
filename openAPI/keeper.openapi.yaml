@@ -66,7 +66,7 @@ paths:
       summary: Update database specification
       deprecated: false
       description: >-
-        Updates the resource specifications (CPU, RAM, storage, backup settings)
+        Updates the resource specifications (CPU in m, RAM in Mi, storage in Gi, backup settings)
         of a database instance. Requires a valid If-Match header with the
         current ETag value to prevent concurrent modification conflicts.
       operationId: UpdateDatabase
@@ -285,9 +285,10 @@ paths:
       summary: Retrieve sensitive credentials
       deprecated: false
       description: >-
-        Retrieves the database credentials (username and password) for a
-        specific database instance. This endpoint should be used with caution as
-        it returns sensitive information.
+        Retrieves credentials for the database instance. Response shape depends
+        on the instance authentication_methods: connection_string is always
+        present; username/password when SCRAM_SHA_256 is enabled; tls_certs when
+        MTLS is enabled. Use with caution as it returns sensitive information.
       operationId: GetDatabaseCredentials
       tags: [ ]
       parameters:
@@ -661,6 +662,17 @@ paths:
         - oidcAuth: [ ]
 components:
   schemas:
+    Region:
+      type: string
+      description: Deployment region where the database is or will be provisioned.
+      enum:
+        - eu-west-1
+        - eu-central-1
+        - us-east-1
+        - us-west-2
+        - ca-central-1
+        - ap-southeast-1
+        - ap-northeast-1
     DatabaseInstance:
       type: object
       properties:
@@ -698,25 +710,34 @@ components:
           type: string
           format: uuid
           description: User ID of the user who created this database instance
+        region:
+          $ref: '#/components/schemas/Region'
       required:
         - id
         - name
         - team_id
         - status
         - spec
+        - region
     DatabaseSpec:
       type: object
+      description: >-
+        Compute and storage requirements. Units follow Kubernetes notation:
+        RAM in Mi (MiB), CPU in m (millicores), Storage in Gi (GiB).
       properties:
-        cpu_millicores:
+        cpu_m:
           type: integer
+          description: CPU limit in m (millicores). 1000m = 1 vCPU.
           minimum: 500
           maximum: 256000
-        ram_mb:
+        ram_mi:
           type: integer
+          description: RAM limit in Mi (MiB).
           minimum: 1024
           maximum: 1000000
-        storage_gb:
+        storage_gi:
           type: integer
+          description: Storage size in Gi (GiB).
           minimum: 1
           maximum: 5000
         is_backup_enabled:
@@ -729,10 +750,24 @@ components:
         high_availability_enabled:
           type: boolean
           description: When true, the database runs with 3 replicas (HA). When false, it runs with 1 replica.
+        authentication_methods:
+          type: array
+          description: >-
+            Authentication methods allowed for client connections. At least one
+            required; both can be enabled—the database then accepts connections
+            using either SCRAM-SHA-256 (password) or mTLS (client cert) per connection.
+          minItems: 1
+          items:
+            type: string
+            enum:
+              - SCRAM_SHA_256
+              - MTLS
+          uniqueItems: true
       required:
-        - cpu_millicores
-        - ram_mb
-        - storage_gb
+        - cpu_m
+        - ram_mi
+        - storage_gi
+        - authentication_methods
     ConnectionInfo:
       type: object
       description: >-
@@ -755,12 +790,51 @@ components:
       nullable: true
     DatabaseCredentials:
       type: object
+      description: >-
+        Credentials for database access. Contents depend on the instance
+        authentication_methods. Always includes connection_string and
+        authentication_methods; SCRAM_SHA_256 adds username/password; MTLS
+        adds tls_certs.
       properties:
+        authentication_methods:
+          type: array
+          description: Which auth methods these credentials support.
+          minItems: 1
+          items:
+            type: string
+            enum:
+              - SCRAM_SHA_256
+              - MTLS
+          uniqueItems: true
+        connection_string:
+          type: string
+          description: Full connection string (host, port, database) for connecting.
         username:
           type: string
+          description: Present when SCRAM_SHA_256 is enabled.
         password:
           type: string
-          description: Plaintext password (decrypted by backend)
+          description: Present when SCRAM_SHA_256 is enabled (decrypted by backend).
+        tls_certs:
+          type: object
+          description: Present when MTLS is enabled. Client cert material for mTLS.
+          required:
+            - ca
+            - cert
+            - key
+          properties:
+            ca:
+              type: string
+              description: Server CA certificate (PEM) to verify the database server
+            cert:
+              type: string
+              description: Client certificate (PEM) for mTLS
+            key:
+              type: string
+              description: Client private key (PEM) for mTLS
+      required:
+        - authentication_methods
+        - connection_string
     CreateDatabaseRequest:
       type: object
       properties:
@@ -779,11 +853,14 @@ components:
         team_id:
           type: string
           format: uuid
+        region:
+          $ref: '#/components/schemas/Region'
         spec:
           $ref: '#/components/schemas/DatabaseSpec'
       required:
         - instance_name
         - team_id
+        - region
         - spec
     UpdateDatabaseRequest:
       type: object
@@ -830,21 +907,21 @@ components:
         limit_instances:
           type: integer
           description: Maximum number of database instances the team can provision
-        limit_cpu_millicores:
+        limit_cpu_m:
           type: integer
           description: >-
-            Maximum total CPU allocation in millicores across all database
-            instances for the team
-        limit_ram_mb:
+            Maximum total CPU allocation in m (millicores),
+            across all database instances for the team
+        limit_ram_mi:
           type: integer
           description: >-
-            Maximum total RAM allocation in megabytes across all database
-            instances for the team
-        limit_storage_gb:
+            Maximum total RAM allocation in Mi (MiB), across
+            all database instances for the team
+        limit_storage_gi:
           type: integer
           description: >-
-            Maximum total storage allocation in gigabytes across all database
-            instances for the team
+            Maximum total storage allocation in Gi (GiB),
+            across all database instances for the team
     TeamMember:
       type: object
       properties:
@@ -1028,6 +1105,8 @@ components:
       description: >-
         OIDC JWT Bearer token authentication. Tokens are obtained from the OIDC
         provider at https://idp.domain.com
-servers: [ ]
+servers:
+  - url: /api/v1
+    description: API base path. All paths in this spec are relative to this URL (e.g. GET /databases/{id} is GET /api/v1/databases/{id}).
 security:
   - oidcAuth: [ ]

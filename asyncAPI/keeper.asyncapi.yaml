@@ -87,27 +87,41 @@ components:
         Unique platform ID of the database (UUID). Included in subject so only
         one message per database is relevant in the queue.
   schemas:
+    Region:
+      type: string
+      description: Deployment region where the database is or will be provisioned.
+      enum:
+        - eu-west-1
+        - eu-central-1
+        - us-east-1
+        - us-west-2
+        - ca-central-1
+        - ap-southeast-1
+        - ap-northeast-1
     ResourceSpec:
       type: object
-      description: Compute and Storage requirements
+      description: >-
+        Compute and storage requirements. Units follow Kubernetes notation:
+        RAM in Mi (MiB), CPU in m (millicores), Storage in Gi (GiB).
       required:
-        - cpu_millicores
-        - ram_mb
-        - storage_gb
+        - cpu_m
+        - ram_mi
+        - storage_gi
+        - authentication_methods
       properties:
-        cpu_millicores:
+        cpu_m:
           type: integer
-          description: CPU limit in millicores (1000 = 1 vCPU)
+          description: CPU limit in m (millicores). 1000m = 1 vCPU.
           minimum: 500
           maximum: 256000
-        ram_mb:
+        ram_mi:
           type: integer
-          description: RAM limit in Megabytes
+          description: RAM limit in Mi (MiB).
           minimum: 1024
           maximum: 1000000
-        storage_gb:
+        storage_gi:
           type: integer
-          description: Storage size in Gigabytes
+          description: Storage size in Gi (GiB).
           minimum: 1
           maximum: 5000
         is_backup_enabled:
@@ -125,6 +139,19 @@ components:
           description: >-
             When true, database runs with 3 replicas (HA); when false, 1
             replica.
+        authentication_methods:
+          type: array
+          description: >-
+            Authentication methods allowed for client connections. At least one
+            required; both can be enabled—the database then accepts connections
+            using either SCRAM-SHA-256 (password) or mTLS (client cert) per connection.
+          minItems: 1
+          items:
+            type: string
+            enum:
+              - SCRAM_SHA_256
+              - MTLS
+          uniqueItems: true
     StatusCondition:
       type: object
       description: Kubernetes-style status condition
@@ -268,33 +295,59 @@ components:
               provided
           connection_details:
             type: object
-            description: Database connection credentials and connection information
+            description: >-
+              Connection and authentication credentials. Contents depend on the
+              database authentication_methods. Always includes connection_string
+              and authentication_methods; SCRAM_SHA_256 adds username/password;
+              MTLS adds tls_certs (client cert + key + server CA).
             required:
-              - username
-              - password
+              - authentication_methods
               - connection_string
             properties:
-              username:
-                type: string
-                description: Database username for authentication
-              password:
-                type: string
-                description: Database password for authentication
+              authentication_methods:
+                type: array
+                description: >-
+                  Which auth methods this payload provides credentials for (one
+                  or both). Use the corresponding fields (scram: username/password;
+                  mtls: tls_certs).
+                minItems: 1
+                items:
+                  type: string
+                  enum:
+                    - SCRAM_SHA_256
+                    - MTLS
+                uniqueItems: true
               connection_string:
                 type: string
                 description: >-
                   Full connection string (host, port, database name) for
-                  connecting to the database
+                  connecting to the database. Used for both SCRAM and mTLS.
+              username:
+                type: string
+                description: >-
+                  Database username for SCRAM-SHA-256. Present when
+                  SCRAM_SHA_256 is in authentication_methods.
+              password:
+                type: string
+                description: >-
+                  Database password for SCRAM-SHA-256. Present when
+                  SCRAM_SHA_256 is in authentication_methods.
               tls_certs:
                 type: object
-                description: TLS certificate files for secure database connections
+                description: >-
+                  Client certificate material for mTLS. Present when MTLS is in
+                  authentication_methods. Use with connection_string to connect.
+                required:
+                  - ca
+                  - cert
+                  - key
                 properties:
                   ca:
                     type: string
-                    description: Certificate Authority (CA) certificate in PEM format
+                    description: Server CA certificate (PEM) to verify the database server
                   cert:
                     type: string
-                    description: Client certificate in PEM format
+                    description: Client certificate (PEM) for mTLS authentication
                   key:
                     type: string
-                    description: Client private key in PEM format
+                    description: Client private key (PEM) for mTLS authentication
