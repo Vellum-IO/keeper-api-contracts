@@ -139,8 +139,8 @@ paths:
       deprecated: false
       description: >-
         Marks a database instance for deletion. The database will be
-        deprovisioned asynchronously. Once marked, the status will change to
-        DELETING.
+        deprovisioned asynchronously. Once marked, the status will transition
+        through PENDING_DELETE → FLAGGED_DELETE → DELETING → TERMINATED.
       operationId: DeleteDatabase
       tags:
         - Databases
@@ -245,7 +245,7 @@ paths:
       description: >-
         Creates a new database instance with the specified resource
         specifications. The database will be provisioned asynchronously and will
-        initially have a PENDING status.
+        initially have a PENDING_CREATE status.
       operationId: CreateDatabase
       tags:
         - Databases
@@ -687,12 +687,25 @@ components:
           format: uuid
         status:
           type: string
+          description: >-
+            Current lifecycle state of the database instance. States indicate
+            queue position (PENDING_*), active operations (PROVISIONING, UPDATING,
+            DELETING), success (READY, TERMINATED), failure (*_FAILED), or
+            degraded health (UNAVAILABLE)
           enum:
-            - PENDING
+            - PENDING_CREATE
+            - PENDING_UPDATE
+            - PENDING_DELETE
+            - FLAGGED_DELETE
             - PROVISIONING
-            - READY
-            - FAILED
+            - UPDATING
             - DELETING
+            - READY
+            - TERMINATED
+            - CREATE_FAILED
+            - UPDATE_FAILED
+            - DELETE_FAILED
+            - UNAVAILABLE
         status_message:
           type: string
           description: Human-readable status from the operator
@@ -772,8 +785,9 @@ components:
       type: object
       description: >-
         Connection information for the database. Only available when the
-        database status is READY. Null for databases in PENDING, PROVISIONING,
-        FAILED, or DELETING states.
+        database status is READY. Null for all other states including
+        PENDING_*, PROVISIONING, UPDATING, *_FAILED, DELETING, TERMINATED, and
+        UNAVAILABLE.
       properties:
         host:
           type: string
