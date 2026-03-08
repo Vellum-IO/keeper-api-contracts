@@ -1,0 +1,537 @@
+openapi: 3.0.1
+info:
+  title: Metrics API
+  description: >-
+    Metrics API for database instances managed by Keeper. Clients request metrics
+    by passing a metric key (e.g. "cpu_usage") which the backend maps to the
+    corresponding PromQL query and executes against VictoriaMetrics. Raw PromQL
+    is never exposed to the client.
+  version: 1.0.0
+tags:
+  - name: Metrics
+paths:
+  /metrics/query:
+    get:
+      summary: Instant query
+      deprecated: false
+      description: >-
+        Returns the current value of a named metric for a database instance.
+        The backend resolves the metric key to a PromQL query internally and
+        evaluates it at a single point in time against VictoriaMetrics.
+      operationId: QueryInstant
+      tags:
+        - Metrics
+      parameters:
+        - name: database_id
+          in: query
+          description: Unique identifier of the database instance to query metrics for
+          required: true
+          example: 550e8400-e29b-41d4-a716-446655440000
+          schema:
+            type: string
+            format: uuid
+        - name: team_id
+          in: query
+          description: Unique identifier of the team that owns the database
+          required: true
+          example: 550e8400-e29b-41d4-a716-446655440000
+          schema:
+            type: string
+            format: uuid
+        - name: metric
+          in: query
+          description: >-
+            Metric key identifying the data to retrieve. The backend maps this
+            key to the corresponding PromQL query.
+          required: true
+          example: cpu_usage
+          schema:
+            type: string
+        - name: time
+          in: query
+          description: >-
+            Evaluation timestamp as RFC3339 or Unix timestamp. Defaults to
+            current server time when omitted.
+          required: false
+          example: '2025-07-01T00:00:00Z'
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Query executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrometheusQueryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/MetricNotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - oidcAuth: [ ]
+  /metrics/query_range:
+    get:
+      summary: Range query
+      deprecated: false
+      description: >-
+        Returns values of a named metric over a time range for a database
+        instance. The backend resolves the metric key to a PromQL query
+        internally and evaluates it against VictoriaMetrics.
+      operationId: QueryRange
+      tags:
+        - Metrics
+      parameters:
+        - name: database_id
+          in: query
+          description: Unique identifier of the database instance to query metrics for
+          required: true
+          example: 550e8400-e29b-41d4-a716-446655440000
+          schema:
+            type: string
+            format: uuid
+        - name: team_id
+          in: query
+          description: Unique identifier of the team that owns the database
+          required: true
+          example: 550e8400-e29b-41d4-a716-446655440000
+          schema:
+            type: string
+            format: uuid
+        - name: metric
+          in: query
+          description: >-
+            Metric key identifying the data to retrieve. The backend maps this
+            key to the corresponding PromQL query.
+          required: true
+          example: cpu_usage
+          schema:
+            type: string
+        - name: start
+          in: query
+          description: Start timestamp of the range as RFC3339 or Unix timestamp
+          required: true
+          example: '2025-07-01T00:00:00Z'
+          schema:
+            type: string
+        - name: end
+          in: query
+          description: End timestamp of the range as RFC3339 or Unix timestamp
+          required: true
+          example: '2025-07-01T01:00:00Z'
+          schema:
+            type: string
+        - name: step
+          in: query
+          description: Query resolution step width (e.g. 15s, 1m, 1h)
+          required: true
+          example: 1m
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Query executed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrometheusQueryResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/MetricNotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - oidcAuth: [ ]
+  /metrics/labels:
+    get:
+      summary: List label names
+      deprecated: false
+      description: >-
+        Returns the list of label names available for a given metric on the
+        specified database instance. Optionally scoped to a time range.
+      operationId: ListLabels
+      tags:
+        - Metrics
+      parameters:
+        - name: database_id
+          in: query
+          description: Unique identifier of the database instance to query labels for
+          required: true
+          example: 550e8400-e29b-41d4-a716-446655440000
+          schema:
+            type: string
+            format: uuid
+        - name: team_id
+          in: query
+          description: Unique identifier of the team that owns the database
+          required: true
+          example: 550e8400-e29b-41d4-a716-446655440000
+          schema:
+            type: string
+            format: uuid
+        - name: metric
+          in: query
+          description: >-
+            Metric key to list labels for. When omitted, returns labels across
+            all metrics for the database.
+          required: false
+          example: cpu_usage
+          schema:
+            type: string
+        - name: start
+          in: query
+          description: Start timestamp as RFC3339 or Unix timestamp
+          required: false
+          example: '2025-07-01T00:00:00Z'
+          schema:
+            type: string
+        - name: end
+          in: query
+          description: End timestamp as RFC3339 or Unix timestamp
+          required: false
+          example: '2025-07-01T01:00:00Z'
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Label names retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrometheusLabelsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/MetricNotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - oidcAuth: [ ]
+  /metrics/series:
+    get:
+      summary: Find matching series
+      deprecated: false
+      description: >-
+        Returns the list of time series for a given metric on the specified
+        database instance. Optionally scoped to a time range.
+      operationId: ListSeries
+      tags:
+        - Metrics
+      parameters:
+        - name: database_id
+          in: query
+          description: Unique identifier of the database instance to query series for
+          required: true
+          example: 550e8400-e29b-41d4-a716-446655440000
+          schema:
+            type: string
+            format: uuid
+        - name: team_id
+          in: query
+          description: Unique identifier of the team that owns the database
+          required: true
+          example: 550e8400-e29b-41d4-a716-446655440000
+          schema:
+            type: string
+            format: uuid
+        - name: metric
+          in: query
+          description: >-
+            Metric key to find series for. The backend resolves this to the
+            corresponding series selector.
+          required: true
+          example: cpu_usage
+          schema:
+            type: string
+        - name: start
+          in: query
+          description: Start timestamp as RFC3339 or Unix timestamp
+          required: false
+          example: '2025-07-01T00:00:00Z'
+          schema:
+            type: string
+        - name: end
+          in: query
+          description: End timestamp as RFC3339 or Unix timestamp
+          required: false
+          example: '2025-07-01T01:00:00Z'
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Matching series retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrometheusSeriesResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/MetricNotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - oidcAuth: [ ]
+components:
+  schemas:
+    PrometheusQueryResponse:
+      type: object
+      description: >-
+        Prometheus-compatible response envelope for instant and range queries.
+      properties:
+        status:
+          type: string
+          enum:
+            - success
+          description: Response status
+        data:
+          $ref: '#/components/schemas/PrometheusQueryResult'
+        warnings:
+          type: array
+          description: Optional warnings returned by the query engine
+          items:
+            type: string
+      required:
+        - status
+        - data
+    PrometheusQueryResult:
+      type: object
+      description: Query result containing the type and result data
+      properties:
+        resultType:
+          type: string
+          enum:
+            - matrix
+            - vector
+            - scalar
+            - string
+          description: >-
+            Type of the query result. vector for instant queries returning
+            current values, matrix for range queries returning time series,
+            scalar for literal numeric results, string for literal string results.
+        result:
+          type: array
+          description: >-
+            Array of result items. Shape depends on resultType: InstantVector
+            items for vector, RangeVector items for matrix, a single
+            [timestamp, value] for scalar/string.
+          items:
+            oneOf:
+              - $ref: '#/components/schemas/InstantVector'
+              - $ref: '#/components/schemas/RangeVector'
+              - $ref: '#/components/schemas/ScalarOrString'
+      required:
+        - resultType
+        - result
+    InstantVector:
+      type: object
+      description: A single instant-query result (resultType=vector)
+      properties:
+        metric:
+          type: object
+          description: Label set identifying the time series
+          additionalProperties:
+            type: string
+        value:
+          type: array
+          description: >-
+            A [unix_timestamp, sample_value] pair representing the value at the
+            queried instant.
+          minItems: 2
+          maxItems: 2
+          items:
+            oneOf:
+              - type: number
+                description: Unix timestamp
+              - type: string
+                description: Sample value
+      required:
+        - metric
+        - value
+    RangeVector:
+      type: object
+      description: A single range-query result (resultType=matrix)
+      properties:
+        metric:
+          type: object
+          description: Label set identifying the time series
+          additionalProperties:
+            type: string
+        values:
+          type: array
+          description: >-
+            Array of [unix_timestamp, sample_value] pairs over the queried range.
+          items:
+            type: array
+            minItems: 2
+            maxItems: 2
+            items:
+              oneOf:
+                - type: number
+                  description: Unix timestamp
+                - type: string
+                  description: Sample value
+      required:
+        - metric
+        - values
+    ScalarOrString:
+      type: array
+      description: >-
+        A [unix_timestamp, value] pair for scalar or string result types.
+      minItems: 2
+      maxItems: 2
+      items:
+        oneOf:
+          - type: number
+            description: Unix timestamp
+          - type: string
+            description: Scalar or string value
+    PrometheusLabelsResponse:
+      type: object
+      description: Prometheus-compatible response envelope for label name queries.
+      properties:
+        status:
+          type: string
+          enum:
+            - success
+          description: Response status
+        data:
+          type: array
+          description: List of label names
+          items:
+            type: string
+          example:
+            - __name__
+            - instance
+            - job
+        warnings:
+          type: array
+          description: Optional warnings returned by the query engine
+          items:
+            type: string
+      required:
+        - status
+        - data
+    PrometheusSeriesResponse:
+      type: object
+      description: Prometheus-compatible response envelope for series queries.
+      properties:
+        status:
+          type: string
+          enum:
+            - success
+          description: Response status
+        data:
+          type: array
+          description: >-
+            List of label sets, each representing a matching time series. Each
+            object is a set of label name to label value mappings.
+          items:
+            type: object
+            additionalProperties:
+              type: string
+          example:
+            - __name__: cnpg_backends_total
+              instance: db-prod-01
+              job: cnpg
+        warnings:
+          type: array
+          description: Optional warnings returned by the query engine
+          items:
+            type: string
+      required:
+        - status
+        - data
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        details:
+          type: string
+          description: Additional error details
+      required:
+        - error
+  responses:
+    BadRequest:
+      description: Bad request - malformed request or validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized - authentication token is missing, invalid, or expired
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: >-
+        Forbidden - user is authenticated but lacks necessary permissions to
+        access this resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not found - the requested resource does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    MetricNotFound:
+      description: >-
+        Unknown metric key - the provided metric key does not map to any
+        known query
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  securitySchemes:
+    oidcAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >-
+        OIDC JWT Bearer token authentication. Tokens are obtained from the OIDC
+        provider at https://idp.domain.com
+servers:
+  - url: /api/v1
+    description: >-
+      API base path. All paths in this spec are relative to this URL
+      (e.g. GET /metrics/query is GET /api/v1/metrics/query).
+security:
+  - oidcAuth: [ ]
